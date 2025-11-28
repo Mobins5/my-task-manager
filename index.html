@@ -246,11 +246,6 @@
             border-left-color: #f97316;
         }
 
-        .task-item.urgent {
-            background: #fef2f2;
-            border-left-color: #ef4444;
-        }
-
         .task-checkbox {
             flex-shrink: 0;
             width: 24px;
@@ -508,19 +503,6 @@
                             <option value="weekly">هفتگی</option>
                             <option value="monthly">ماهانه</option>
                         </select>
-                        
-                        <div id="weeklyOptions" style="display: none; margin-top: 10px;">
-                            <label>روزهای هفته</label>
-                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                <label><input type="checkbox" value="0"> شنبه</label>
-                                <label><input type="checkbox" value="1"> یکشنبه</label>
-                                <label><input type="checkbox" value="2"> دوشنبه</label>
-                                <label><input type="checkbox" value="3"> سه‌شنبه</label>
-                                <label><input type="checkbox" value="4"> چهارشنبه</label>
-                                <label><input type="checkbox" value="5"> پنجشنبه</label>
-                                <label><input type="checkbox" value="6"> جمعه</label>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -586,3 +568,390 @@
             
             // نمایش تب انتخاب شده
             document.getElementById(tabName + 'Tab').style.display = 'block';
+            document.querySelector(`.tab:nth-child(${tabName === 'daily' ? 1 : tabName === 'tasks' ? 2 : 3})`).classList.add('active');
+            
+            // رندر محتوای تب
+            if (tabName === 'daily') {
+                renderDailyOverview();
+                renderTasks();
+            } else if (tabName === 'tasks') {
+                renderAllTasks();
+            }
+        }
+
+        // نمایش/مخفی کردن گزینه‌های تکرار
+        function toggleRepeatOptions() {
+            const repeatOptions = document.getElementById('repeatOptions');
+            const checkbox = document.getElementById('repeatCheckbox');
+            
+            if (checkbox.checked) {
+                repeatOptions.classList.remove('hidden');
+            } else {
+                repeatOptions.classList.add('hidden');
+            }
+        }
+
+        // به‌روزرسانی گزینه‌های تکرار
+        function updateRepeatOptions() {
+            // در این نسخه ساده، فقط نوع تکرار رو ذخیره می‌کنیم
+        }
+
+        // اضافه کردن تسک جدید
+        function addNewTask() {
+            const project = document.getElementById('projectInput').value.trim();
+            const title = document.getElementById('taskTitle').value.trim();
+            const description = document.getElementById('taskDescription').value.trim();
+            const date = document.getElementById('taskDate').value;
+            const time = document.getElementById('taskTime').value;
+            const repeatEnabled = document.getElementById('repeatCheckbox').checked;
+            const repeatType = document.getElementById('repeatType').value;
+
+            // اعتبارسنجی
+            if (!project || !title || !date || !time) {
+                showNotification('لطفا فیلدهای ضروری رو پر کن', 'alarm');
+               
+                return;
+            }
+
+            // اضافه کردن پروژه به لیست
+            projects.add(project);
+
+            // ساخت تسک جدید
+            const newTask = {
+                id: Date.now(),
+                project: project,
+                title: title,
+                description: description,
+                date: date,
+                time: time,
+                completed: false,
+                repeat: {
+                    enabled: repeatEnabled,
+                    type: repeatType,
+                    interval: 1
+                },
+                alarmShown: false
+            };
+
+            tasks.push(newTask);
+            saveData();
+            
+            // پاک کردن فرم
+            document.getElementById('projectInput').value = '';
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDescription').value = '';
+            document.getElementById('taskDate').value = '';
+            document.getElementById('taskTime').value = '';
+            document.getElementById('repeatCheckbox').checked = false;
+            document.getElementById('repeatOptions').classList.add('hidden');
+            
+            showNotification('تسک جدید اضافه شد', 'success');
+            switchTab('daily');
+        }
+
+        // نمایش نمای روز
+        function renderDailyOverview() {
+            const today = new Date().toISOString().split('T')[0];
+            const dailyTasks = tasks.filter(task => 
+                task.date === today && !task.completed
+            ).sort((a, b) => a.time.localeCompare(b.time));
+
+            const dailyTasksDiv = document.getElementById('dailyTasks');
+            
+            if (dailyTasks.length === 0) {
+                dailyTasksDiv.innerHTML = '<div style="text-align: center; color: #9ca3af; padding: 20px;">هیچ کاری برای امروز ندارید! 🎉</div>';
+                return;
+            }
+
+            dailyTasksDiv.innerHTML = dailyTasks.map(task => `
+                <div class="daily-task">
+                    <div class="daily-task-header">
+                        <span class="daily-task-title">${task.title}</span>
+                        <span class="daily-task-time">${task.time}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="daily-task-project">${task.project}</span>
+                        ${isTaskSoon(task.date, task.time) ? '<span style="color: #ea580c; font-size: 11px;">🔥 به زودی</span>' : ''}
+                    </div>
+                    ${task.description ? `<div style="font-size: 12px; color: #6b7280; margin-top: 5px;">${task.description}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // رندر تسک‌های آینده
+        function renderTasks() {
+            const today = new Date().toISOString().split('T')[0];
+            const projectFilter = document.getElementById('projectFilter').value;
+            
+            let filteredTasks = tasks.filter(task => 
+                task.date > today && !task.completed
+            );
+
+            if (projectFilter !== 'all') {
+                filteredTasks = filteredTasks.filter(task => task.project === projectFilter);
+            }
+
+            // مرتب‌سازی بر اساس تاریخ و زمان
+            filteredTasks.sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.time.localeCompare(b.time);
+            });
+
+            // به‌روزرسانی فیلتر پروژه‌ها
+            updateProjectFilter();
+
+            const upcomingTasksDiv = document.getElementById('upcomingTasks');
+            
+            if (filteredTasks.length === 0) {
+                upcomingTasksDiv.innerHTML = '<div class="empty">هیچ تسک آینده‌ای ندارید!</div>';
+                return;
+            }
+
+            upcomingTasksDiv.innerHTML = filteredTasks.map(task => {
+                const isSoon = isTaskSoon(task.date, task.time);
+                const taskDate = new Date(task.date + 'T00:00:00').toLocaleDateString('fa-IR');
+                
+                return `
+                    <div class="task-item ${isSoon ? 'soon' : ''}">
+                        <div class="task-checkbox" onclick="toggleTask(${task.id})">
+                            ${task.completed ? '✓' : ''}
+                        </div>
+                        <div class="task-content">
+                            <div class="task-header">
+                                <div>
+                                    <div class="task-title">${task.title}</div>
+                                    ${task.repeat.enabled ? `<span class="task-repeat">${getRepeatText(task.repeat)}</span>` : ''}
+                                </div>
+                                <span class="task-project">${task.project}</span>
+                            </div>
+                            <div class="task-details">
+                                <span class="task-date">📅 ${taskDate} - 🕒 ${task.time}</span>
+                                ${task.description ? `<div style="margin-top: 5px;">${task.description}</div>` : ''}
+                                ${isSoon ? '<span class="task-alert">🔥 این تسک به زودی شروع می‌شود!</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-delete" onclick="deleteTask(${task.id})">🗑</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // رندر همه تسک‌ها
+        function renderAllTasks() {
+            const filter = document.getElementById('allTasksFilter').value;
+            let filteredTasks = [...tasks];
+
+            if (filter === 'today') {
+                const today = new Date().toISOString().split('T')[0];
+                filteredTasks = tasks.filter(task => task.date === today);
+            }
+
+            // مرتب‌سازی: اول تسک‌های امروز، سپس بر اساس تاریخ
+            filteredTasks.sort((a, b) => {
+                const today = new Date().toISOString().split('T')[0];
+                if (a.date === today && b.date !== today) return -1;
+                if (a.date !== today && b.date === today) return 1;
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.time.localeCompare(b.time);
+            });
+
+            const allTasksList = document.getElementById('allTasksList');
+            
+            if (filteredTasks.length === 0) {
+                allTasksList.innerHTML = '<div class="empty">هیچ تسکی پیدا نشد!</div>';
+                return;
+            }
+
+            allTasksList.innerHTML = filteredTasks.map(task => {
+                const isSoon = isTaskSoon(task.date, task.time);
+                const taskDate = new Date(task.date + 'T00:00:00').toLocaleDateString('fa-IR');
+                const today = new Date().toISOString().split('T')[0];
+                const isToday = task.date === today;
+                
+                return `
+                    <div class="task-item ${task.completed ? 'completed' : ''} ${isSoon ? 'soon' : ''}">
+                        <div class="task-checkbox" onclick="toggleTask(${task.id})">
+                            ${task.completed ? '✓' : ''}
+                        </div>
+                        <div class="task-content">
+                            <div class="task-header">
+                                <div>
+                                    <div class="task-title">${task.title}</div>
+                                    ${task.repeat.enabled ? `<span class="task-repeat">${getRepeatText(task.repeat)}</span>` : ''}
+                                    ${isToday ? '<span style="background: #f59e0b; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 5px;">امروز</span>' : ''}
+                                </div>
+                                <span class="task-project">${task.project}</span>
+                            </div>
+                            <div class="task-details">
+                                <span class="task-date">📅 ${taskDate} - 🕒 ${task.time}</span>
+                                ${task.description ? `<div style="margin-top: 5px;">${task.description}</div>` : ''}
+                                ${isSoon && !task.completed ? '<span class="task-alert">🔥 این تسک به زودی شروع می‌شود!</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-delete" onclick="deleteTask(${task.id})">🗑</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // به‌روزرسانی فیلتر پروژه‌ها
+        function updateProjectFilter() {
+            const projectFilter = document.getElementById('projectFilter');
+            const allTasksFilter = document.getElementById('allTasksFilter');
+            
+            // پاک کردن گزینه‌های قبلی (به جز "همه")
+            while (projectFilter.children.length > 1) {
+                projectFilter.removeChild(projectFilter.lastChild);
+            }
+            while (allTasksFilter.children.length > 2) {
+                allTasksFilter.removeChild(allTasksFilter.lastChild);
+            }
+            
+            // اضافه کردن پروژه‌ها
+            projects.forEach(project => {
+                const option1 = document.createElement('option');
+                option1.value = project;
+                option1.textContent = project;
+                projectFilter.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = project;
+                option2.textContent = project;
+                allTasksFilter.appendChild(option2);
+            });
+        }
+
+        // بررسی اینکه تسک به زودی شروع می‌شود
+        function isTaskSoon(taskDate, taskTime) {
+            try {
+                const taskDateTime = new Date(taskDate + 'T' + taskTime);
+                const now = new Date();
+                const diffMinutes = (taskDateTime - now) / (1000 * 60);
+                return diffMinutes > 0 && diffMinutes <= 120; // 2 ساعت قبل
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // دریافت متن تکرار
+        function getRepeatText(repeat) {
+            const types = {
+                'daily': 'روزانه',
+                'weekly': 'هفتگی',
+                'monthly': 'ماهانه'
+            };
+            return types[repeat.type] || 'تکرار';
+        }
+
+        // تغییر وضعیت تسک
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveData();
+                
+                if (document.getElementById('dailyTab').style.display !== 'none') {
+                    renderDailyOverview();
+                    renderTasks();
+                } else {
+                    renderAllTasks();
+                }
+                
+                showNotification(task.completed ? 'تسک انجام شد! ✅' : 'تسک به حالت انتظار برگشت', 'success');
+            }
+        }
+
+        // حذف تسک
+        function deleteTask(id) {
+            if (confirm('آیا مطمئن هستید که می‌خواهید این تسک را حذف کنید؟')) {
+                tasks = tasks.filter(t => t.id !== id);
+                saveData();
+                
+                if (document.getElementById('dailyTab').style.display !== 'none') {
+                    renderDailyOverview();
+                    renderTasks();
+                } else {
+                    renderAllTasks();
+                }
+                
+                showNotification('تسک حذف شد', 'success');
+            }
+        }
+
+        // نمایش نوتیفیکیشن
+        function showNotification(message, type) {
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+
+            setTimeout(() => {
+                if (notif.parentNode) {
+                    notif.remove();
+                }
+            }, 3000);
+        }
+
+        // بررسی آلارم‌ها
+        function checkAlarms() {
+            const now = new Date();
+            
+            tasks.forEach(task => {
+                if (!task.completed && !task.alarmShown) {
+                    const taskDateTime = new Date(task.date + 'T' + task.time);
+                    const oneHourBefore = new Date(taskDateTime.getTime() - 60 * 60 * 1000);
+                    
+                    const diffMinutes = (oneHourBefore - now) / (1000 * 60);
+                    
+                    if (diffMinutes > 0 && diffMinutes <= 1) { // 1 دقیقه قبل از آلارم
+                        task.alarmShown = true;
+                        saveData();
+                        
+                        // نمایش نوتیفیکیشن
+                        showNotification(`⏰ یادآوری: "${task.title}" در 1 ساعت دیگر شروع می‌شود!`, 'reminder');
+                        
+                        // آلارم صوتی (در صورت پشتیبانی مرورگر)
+                        try {
+                            const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N
+                        audio.play().catch(e => console.log('آلارم صوتی پشتیبانی نمی‌شود'));
+                    } catch (e) {
+                        console.log('آلارم صوتی در دسترس نیست');
+                    }
+                }
+            });
+        }
+
+        // مقداردهی اولیه برنامه
+        function init() {
+            loadData();
+            updateTime();
+            
+            // تنظیم تاریخ و زمان پیش‌فرض
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('taskDate').value = today;
+            document.getElementById('taskTime').value = '12:00';
+            
+            // نمایش تب روز به صورت پیش‌فرض
+            renderDailyOverview();
+            renderTasks();
+            updateProjectFilter();
+            
+            // تنظیم تایمرها
+            setInterval(updateTime, 60000); // هر دقیقه
+            setInterval(checkAlarms, 30000); // هر 30 ثانیه
+            
+            // درخواست مجوز نوتیفیکیشن
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        // راه‌اندازی برنامه
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
