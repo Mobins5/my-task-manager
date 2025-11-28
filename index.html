@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>برنامه‌ریزی من</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+
+        .header .time {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .stats {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats p {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+
+        .stats .count {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: #4f46e5;
+            transition: width 0.3s;
+        }
+
+        .input-section {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            text-align: right;
+            margin-bottom: 8px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .date-time {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .date-time input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #4338ca;
+        }
+
+        button:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .today-section {
+            background: #fef3c7;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #f59e0b;
+            display: none;
+        }
+
+        .today-section h3 {
+            font-size: 12px;
+            color: #92400e;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .today-task {
+            font-size: 13px;
+            color: #78350f;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .tasks-section {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tasks-section h2 {
+            font-size: 16px;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .task-item {
+            display: flex;
+            gap: 10px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #e5e7eb;
+            align-items: flex-start;
+        }
+
+        .task-item.completed {
+            background: #f0fdf4;
+            border-left-color: #22c55e;
+            opacity: 0.7;
+        }
+
+        .task-item.soon {
+            background: #fff7ed;
+            border-left-color: #f97316;
+        }
+
+        .task-checkbox {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin-top: 2px;
+        }
+
+        .task-item.completed .task-checkbox {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .task-content {
+            flex: 1;
+            text-align: right;
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+
+        .task-date {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .task-alert {
+            color: #ea580c;
+            font-weight: bold;
+            font-size: 11px;
+            display: block;
+            margin-top: 3px;
+        }
+
+        .task-delete {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            margin-top: 2px;
+        }
+
+        .task-delete:hover {
+            background: #fee2e2;
+            border-radius: 4px;
+        }
+
+        .empty {
+            text-align: center;
+            color: #9ca3af;
+            padding: 30px 10px;
+            font-size: 14px;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            animation: slideUp 0.3s ease-out;
+            z-index: 1000;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .notification.alarm {
+            background: #ef4444;
+        }
+
+        .notification.reminder {
+            background: #3b82f6;
+        }
+
+        .notification.success {
+            background: #22c55e;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .celebration {
+            text-align: center;
+            background: #dcfce7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            color: #166534;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 برنامه‌ریزی من</h1>
+            <div class="time" id="currentTime">در حال بارگذاری...</div>
+        </div>
+
+        <div class="stats">
+            <p>امروز</p>
+            <div class="count" id="todayCount">0</div>
+            <div class="progress-bar">
+                <div class="progress" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <input type="text" id="taskInput" placeholder="نام کار...">
+            <div class="date-time">
+                <input type="date" id="dateInput">
+                <input type="time" id="timeInput">
+            </div>
+            <button onclick="addTask()">➕ اضافه کن</button>
+        </div>
+
+        <div id="todaySection" class="today-section">
+            <h3>📌 کارهای امروز</h3>
+            <div id="todayTasks"></div>
+        </div>
+
+        <div class="tasks-section">
+            <h2>همه کارها</h2>
+            <div id="tasksList">در حال بارگذاری...</div>
+        </div>
+    </div>
+
+    <script>
+        // مقداردهی اولیه ایمن
+        let tasks = [];
+        
+        // بارگذاری تسک‌ها از localStorage
+        function loadTasks() {
+            try {
+                const storedTasks = localStorage.getItem('tasks');
+                if (storedTasks) {
+                    tasks = JSON.parse(storedTasks);
+                }
+            } catch (error) {
+                console.error('خطا در بارگذاری تسک‌ها:', error);
+                tasks = [];
+            }
+        }
+
+        // ذخیره تسک‌ها در localStorage
+        function saveTasks() {
+            try {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            } catch (error) {
+                console.error('خطا در ذخیره تسک‌ها:', error);
+                showNotification('خطا در ذخیره‌سازی', 'alarm');
+            }
+        }
+
+        function updateTime() {
+            try {
+                const now = new Date();
+                const options = { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: false 
+                };
+                document.getElementById('currentTime').textContent = now.toLocaleDateString('fa-IR', options);
+            } catch (error) {
+                document.getElementById('currentTime').textContent = new Date().toLocaleString('fa-IR');
+            }
+        }
+
+        function addTask() {
+            const title = document.getElementById('taskInput').value.trim();
+            const date = document.getElementById('dateInput').value;
+            const time = document.getElementById('timeInput').value;
+
+            if (!title || !date || !time) {
+                showNotification('لطفا همه فیلدها رو پر کن', 'alarm');
+                return;
+            }
+
+            const newTask = {
+                id: Date.now(),
+                title: title,
+                date: date,
+                time: time,
+                completed: false,
+                alarmShown: false,
+                reminderShown: false
+            };
+
+            tasks.push(newTask);
+            saveTasks();
+            
+            // پاک کردن فیلدها
+            document.getElementById('taskInput').value = '';
+            document.getElementById('dateInput').value = '';
+            document.getElementById('timeInput').value = '';
+            
+            renderTasks();
+            showNotification('تسک اضافه شد', 'success');
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+
+        function getTasksForToday() {
+            const today = new Date().toISOString().split('T')[0];
+            return tasks.filter(t => t.date === today);
+        }
+
+        function isTaskSoon(taskDate, taskTime) {
+            try {
+                const taskDateTime = new Date(taskDate + 'T' + taskTime);
+                const now = new Date();
+                const diffMinutes = (taskDateTime - now) / (1000 * 60);
+                return diffMinutes > 0 && diffMinutes <= 90;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function renderTasks() {
+            try {
+                const todayTasks = getTasksForToday();
+                const completedCount = tasks.filter(t => t.completed).length;
+                const totalCount = tasks.length;
+
+                // به‌روزرسانی آمار
+                document.getElementById('todayCount').textContent = todayTasks.length;
+                const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+                document.getElementById('progressBar').style.width = progress + '%';
+
+                // نمایش تسک‌های امروز
+                const todaySection = document.getElementById('todaySection');
+                const todayTasksDiv = document.getElementById('todayTasks');
+                
+                if (todayTasks.length > 0) {
+                    todaySection.style.display = 'block';
+                    todayTasksDiv.innerHTML = todayTasks.map(task => 
+                        `<div class="today-task">
+                            <span>${task.title}</span>
+                            <span>${task.time}</span>
+                        </div>`
+                    ).join('');
+                } else {
+                    todaySection.style.display = 'none';
+                    todayTasksDiv.innerHTML = '';
+                }
+
+                // مرتب‌سازی تسک‌ها
+                const sortedTasks = [...tasks].sort((a, b) => {
+                    if (a.date !== b.date) return a.date.localeCompare(b.date);
+                    return a.time.localeCompare(b.time);
+                });
+
+                // نمایش لیست تسک‌ها
+                const tasksList = document.getElementById('tasksList');
+                
+                if (sortedTasks.length === 0) {
+                    tasksList.innerHTML = '<div class="empty">هنوز تسکی نیست!</div>';
+                    return;
+                }
+
+                tasksList.innerHTML = sortedTasks.map(task => {
+                    const isSoon = isTaskSoon(task.date, task.time);
+                    let taskDate;
+                    
+                    try {
+                        taskDate = new Date(task.date + 'T00:00:00').toLocaleDateString('fa-IR');
+                    } catch (error) {
+                        taskDate = task.date;
+                    }
+                    
+                    const alertClass = isSoon && !task.completed ? 'soon' : '';
+                    const completedClass = task.completed ? 'completed' : '';
+                    
+                    return `
+                        <div class="task-item ${completedClass} ${alertClass}">
+                            <div class="task-checkbox" onclick="toggleTask(${task.id})">
+                                ${task.completed ? '✓' : ''}
+                            </div>
+                            <div class="task-content">
+                                <div class="task-title">${task.title}</div>
+                                <div class="task-date">
+                                    ${taskDate} - ${task.time}
+                                    ${isSoon && !task.completed ? '<span class="task-alert">🔥 جلوی دست!</span>' : ''}
+                                </div>
+                            </div>
+                            <button class="task-delete" onclick="deleteTask(${task.id})">🗑</button>
+                        </div>
+                    `;
+                }).join('');
+
+                // نمایش پیام جشن
+                const existingCelebration = document.querySelector('.celebration');
+                if (existingCelebration) {
+                    existingCelebration.remove();
+                }
+
+                if (completedCount > 0 && completedCount === totalCount) {
+                    const celebration = document.createElement('div');
+                    celebration.className = 'celebration';
+                    celebration.textContent = '🎉 آفرین! همه کارت تمام شد!';
+                    document.querySelector('.tasks-section').appendChild(celebration);
+                }
+
+            } catch (error) {
+                console.error('خطا در رندر تسک‌ها:', error);
+                document.getElementById('tasksList').innerHTML = '<div class="empty">خطا در بارگذاری تسک‌ها</div>';
+            }
+        }
+
+        function showNotification(message, type) {
+            try {
+                const notif = document.createElement('div');
+                notif.className = `notification ${type}`;
+                notif.textContent = message;
+                document.body.appendChild(notif);
+
+                setTimeout(() => {
+                    if (notif.parentNode) {
+                        notif.remove();
+                    }
+                }, 3000);
+            } catch (error) {
+                console.error('خطا در نمایش نوتیفیکیشن:', error);
+            }
+        }
+
+        // مقداردهی اولیه
+        function init() {
+            loadTasks();
+            updateTime();
+            renderTasks();
+            
+            // تنظیم تاریخ و زمان پیش‌فرض
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateInput').value = today;
+            document.getElementById('timeInput').value = '12:00';
+            
+            setInterval(updateTime, 60000);
+            setInterval(checkAlerts, 60000);
+        }
+
+        // راه‌اندازی برنامه
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
