@@ -48,7 +48,6 @@
             color: #6b7280;
         }
 
-        /* تب‌ها */
         .tabs {
             display: flex;
             background: #f3f4f6;
@@ -74,7 +73,6 @@
             color: #4f46e5;
         }
 
-        /* فرم اضافه کردن تسک */
         .input-section {
             background: #f9fafb;
             padding: 20px;
@@ -148,7 +146,6 @@
             background: #4338ca;
         }
 
-        /* بخش نمایش کلی روز */
         .daily-overview {
             background: #fef3c7;
             border: 2px solid #f59e0b;
@@ -199,7 +196,6 @@
             font-size: 10px;
         }
 
-        /* لیست تسک‌ها */
         .tasks-section {
             flex: 1;
             overflow-y: auto;
@@ -425,18 +421,16 @@
             <div class="time" id="currentTime">در حال بارگذاری...</div>
         </div>
 
-        <!-- تب‌ها -->
         <div class="tabs">
             <div class="tab active" onclick="switchTab('daily')">📅 نمای روز</div>
             <div class="tab" onclick="switchTab('tasks')">📝 همه تسک‌ها</div>
             <div class="tab" onclick="switchTab('add')">➕ تسک جدید</div>
         </div>
 
-        <!-- نمای روز -->
         <div id="dailyTab" class="tab-content">
             <div class="daily-overview">
                 <h3>📌 کارهای امروز</h3>
-                <div id="dailyTasks"></div>
+                <div id="dailyTasks">در حال بارگذاری...</div>
             </div>
             
             <div class="tasks-section">
@@ -446,11 +440,10 @@
                         <option value="all">همه پروژه‌ها</option>
                     </select>
                 </div>
-                <div id="upcomingTasks"></div>
+                <div id="upcomingTasks">در حال بارگذاری...</div>
             </div>
         </div>
 
-        <!-- همه تسک‌ها -->
         <div id="tasksTab" class="tab-content" style="display: none;">
             <div class="tasks-section">
                 <div class="section-header">
@@ -460,11 +453,10 @@
                         <option value="today">فقط امروز</option>
                     </select>
                 </div>
-                <div id="allTasksList"></div>
+                <div id="allTasksList">در حال بارگذاری...</div>
             </div>
         </div>
 
-        <!-- افزودن تسک جدید -->
         <div id="addTab" class="tab-content" style="display: none;">
             <div class="input-section">
                 <div class="form-group">
@@ -512,11 +504,9 @@
     </div>
 
     <script>
-        // ساختار داده‌ای پیشرفته
         let tasks = [];
         let projects = new Set();
 
-        // بارگذاری از localStorage
         function loadData() {
             try {
                 const storedTasks = localStorage.getItem('advancedTasks');
@@ -524,7 +514,13 @@
                 
                 if (storedTasks) {
                     tasks = JSON.parse(storedTasks);
+                } else {
+                    tasks = [];
+                    document.getElementById('dailyTasks').innerHTML = '<div class="empty">هنوز تسکی اضافه نکرده‌اید!</div>';
+                    document.getElementById('upcomingTasks').innerHTML = '<div class="empty">هنوز تسکی اضافه نکرده‌اید!</div>';
+                    document.getElementById('allTasksList').innerHTML = '<div class="empty">هنوز تسکی اضافه نکرده‌اید!</div>';
                 }
+                
                 if (storedProjects) {
                     projects = new Set(JSON.parse(storedProjects));
                 }
@@ -534,13 +530,11 @@
             }
         }
 
-        // ذخیره در localStorage
         function saveData() {
             localStorage.setItem('advancedTasks', JSON.stringify(tasks));
             localStorage.setItem('projects', JSON.stringify([...projects]));
         }
 
-        // به‌روزرسانی زمان
         function updateTime() {
             const now = new Date();
             const options = { 
@@ -554,23 +548,18 @@
             document.getElementById('currentTime').textContent = now.toLocaleDateString('fa-IR', options);
         }
 
-        // تغییر تب
         function switchTab(tabName) {
-            // مخفی کردن همه تب‌ها
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.style.display = 'none';
             });
             
-            // غیرفعال کردن همه تب‌ها
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             
-            // نمایش تب انتخاب شده
             document.getElementById(tabName + 'Tab').style.display = 'block';
             document.querySelector(`.tab:nth-child(${tabName === 'daily' ? 1 : tabName === 'tasks' ? 2 : 3})`).classList.add('active');
             
-            // رندر محتوای تب
             if (tabName === 'daily') {
                 renderDailyOverview();
                 renderTasks();
@@ -579,7 +568,6 @@
             }
         }
 
-        // نمایش/مخفی کردن گزینه‌های تکرار
         function toggleRepeatOptions() {
             const repeatOptions = document.getElementById('repeatOptions');
             const checkbox = document.getElementById('repeatCheckbox');
@@ -591,12 +579,10 @@
             }
         }
 
-        // به‌روزرسانی گزینه‌های تکرار
         function updateRepeatOptions() {
-            // در این نسخه ساده، فقط نوع تکرار رو ذخیره می‌کنیم
+            // فقط نوع تکرار رو ذخیره می‌کنیم
         }
 
-        // اضافه کردن تسک جدید
         function addNewTask() {
             const project = document.getElementById('projectInput').value.trim();
             const title = document.getElementById('taskTitle').value.trim();
@@ -606,17 +592,13 @@
             const repeatEnabled = document.getElementById('repeatCheckbox').checked;
             const repeatType = document.getElementById('repeatType').value;
 
-            // اعتبارسنجی
             if (!project || !title || !date || !time) {
                 showNotification('لطفا فیلدهای ضروری رو پر کن', 'alarm');
-               
                 return;
             }
 
-            // اضافه کردن پروژه به لیست
             projects.add(project);
 
-            // ساخت تسک جدید
             const newTask = {
                 id: Date.now(),
                 project: project,
@@ -636,7 +618,6 @@
             tasks.push(newTask);
             saveData();
             
-            // پاک کردن فرم
             document.getElementById('projectInput').value = '';
             document.getElementById('taskTitle').value = '';
             document.getElementById('taskDescription').value = '';
@@ -649,7 +630,6 @@
             switchTab('daily');
         }
 
-        // نمایش نمای روز
         function renderDailyOverview() {
             const today = new Date().toISOString().split('T')[0];
             const dailyTasks = tasks.filter(task => 
@@ -678,7 +658,6 @@
             `).join('');
         }
 
-        // رندر تسک‌های آینده
         function renderTasks() {
             const today = new Date().toISOString().split('T')[0];
             const projectFilter = document.getElementById('projectFilter').value;
@@ -691,13 +670,11 @@
                 filteredTasks = filteredTasks.filter(task => task.project === projectFilter);
             }
 
-            // مرتب‌سازی بر اساس تاریخ و زمان
             filteredTasks.sort((a, b) => {
                 if (a.date !== b.date) return a.date.localeCompare(b.date);
                 return a.time.localeCompare(b.time);
             });
 
-            // به‌روزرسانی فیلتر پروژه‌ها
             updateProjectFilter();
 
             const upcomingTasksDiv = document.getElementById('upcomingTasks');
@@ -738,7 +715,6 @@
             }).join('');
         }
 
-        // رندر همه تسک‌ها
         function renderAllTasks() {
             const filter = document.getElementById('allTasksFilter').value;
             let filteredTasks = [...tasks];
@@ -748,7 +724,6 @@
                 filteredTasks = tasks.filter(task => task.date === today);
             }
 
-            // مرتب‌سازی: اول تسک‌های امروز، سپس بر اساس تاریخ
             filteredTasks.sort((a, b) => {
                 const today = new Date().toISOString().split('T')[0];
                 if (a.date === today && b.date !== today) return -1;
@@ -798,12 +773,10 @@
             }).join('');
         }
 
-        // به‌روزرسانی فیلتر پروژه‌ها
         function updateProjectFilter() {
             const projectFilter = document.getElementById('projectFilter');
             const allTasksFilter = document.getElementById('allTasksFilter');
             
-            // پاک کردن گزینه‌های قبلی (به جز "همه")
             while (projectFilter.children.length > 1) {
                 projectFilter.removeChild(projectFilter.lastChild);
             }
@@ -811,7 +784,6 @@
                 allTasksFilter.removeChild(allTasksFilter.lastChild);
             }
             
-            // اضافه کردن پروژه‌ها
             projects.forEach(project => {
                 const option1 = document.createElement('option');
                 option1.value = project;
@@ -825,19 +797,17 @@
             });
         }
 
-        // بررسی اینکه تسک به زودی شروع می‌شود
         function isTaskSoon(taskDate, taskTime) {
             try {
                 const taskDateTime = new Date(taskDate + 'T' + taskTime);
                 const now = new Date();
                 const diffMinutes = (taskDateTime - now) / (1000 * 60);
-                return diffMinutes > 0 && diffMinutes <= 120; // 2 ساعت قبل
+                return diffMinutes > 0 && diffMinutes <= 120;
             } catch (error) {
                 return false;
             }
         }
 
-        // دریافت متن تکرار
         function getRepeatText(repeat) {
             const types = {
                 'daily': 'روزانه',
@@ -847,7 +817,6 @@
             return types[repeat.type] || 'تکرار';
         }
 
-        // تغییر وضعیت تسک
         function toggleTask(id) {
             const task = tasks.find(t => t.id === id);
             if (task) {
@@ -865,7 +834,6 @@
             }
         }
 
-        // حذف تسک
         function deleteTask(id) {
             if (confirm('آیا مطمئن هستید که می‌خواهید این تسک را حذف کنید؟')) {
                 tasks = tasks.filter(t => t.id !== id);
@@ -882,7 +850,6 @@
             }
         }
 
-        // نمایش نوتیفیکیشن
         function showNotification(message, type) {
             const notif = document.createElement('div');
             notif.className = `notification ${type}`;
@@ -896,7 +863,6 @@
             }, 3000);
         }
 
-        // بررسی آلارم‌ها
         function checkAlarms() {
             const now = new Date();
             
@@ -907,50 +873,36 @@
                     
                     const diffMinutes = (oneHourBefore - now) / (1000 * 60);
                     
-                    if (diffMinutes > 0 && diffMinutes <= 1) { // 1 دقیقه قبل از آلارم
+                    if (diffMinutes > 0 && diffMinutes <= 1) {
                         task.alarmShown = true;
                         saveData();
                         
-                        // نمایش نوتیفیکیشن
                         showNotification(`⏰ یادآوری: "${task.title}" در 1 ساعت دیگر شروع می‌شود!`, 'reminder');
-                        
-                        // آلارم صوتی (در صورت پشتیبانی مرورگر)
-                        try {
-                            const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSsFJHfH8N
-                        audio.play().catch(e => console.log('آلارم صوتی پشتیبانی نمی‌شود'));
-                    } catch (e) {
-                        console.log('آلارم صوتی در دسترس نیست');
                     }
                 }
             });
         }
 
-        // مقداردهی اولیه برنامه
         function init() {
             loadData();
             updateTime();
             
-            // تنظیم تاریخ و زمان پیش‌فرض
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('taskDate').value = today;
             document.getElementById('taskTime').value = '12:00';
             
-            // نمایش تب روز به صورت پیش‌فرض
             renderDailyOverview();
             renderTasks();
             updateProjectFilter();
             
-            // تنظیم تایمرها
-            setInterval(updateTime, 60000); // هر دقیقه
-            setInterval(checkAlarms, 30000); // هر 30 ثانیه
+            setInterval(updateTime, 60000);
+            setInterval(checkAlarms, 30000);
             
-            // درخواست مجوز نوتیفیکیشن
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission();
             }
         }
 
-        // راه‌اندازی برنامه
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
